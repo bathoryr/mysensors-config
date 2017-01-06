@@ -1,0 +1,2 @@
+# mysensors-config
+MySensors things
