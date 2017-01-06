@@ -1,0 +1,325 @@
+[
+    {
+        "id": "fbebb658.89881",
+        "type": "tab",
+        "label": "MQTT to TCP"
+    },
+    {
+        "id": "e8f171fe.1fb08",
+        "type": "mqtt in",
+        "z": "fbebb658.89881",
+        "name": "",
+        "topic": "RPi-pub/#",
+        "qos": "2",
+        "broker": "d388f4ae.23147",
+        "x": 93.75,
+        "y": 514.75,
+        "wires": [
+            [
+                "76e39e45.3bdb98",
+                "c4ad0c55.b13ad"
+            ]
+        ]
+    },
+    {
+        "id": "76e39e45.3bdb98",
+        "type": "function",
+        "z": "fbebb658.89881",
+        "name": "MQTT to MYS Serial",
+        "func": "var splitTopic= msg.topic.split(\"\\/\");\n\n// splitTopic[0] is the MySensors/ preamble. #1 is NODE_ID and on up. \nmsg.payload = splitTopic[1] + \";\" + splitTopic[2] + \";\" +  splitTopic[3] + \";\" +  splitTopic[4] + \";\" +  splitTopic[5] + \";\" +  msg.payload + \"\\n\";\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 280,
+        "y": 565,
+        "wires": [
+            [
+                "9ac9b5c1.a21c6"
+            ]
+        ]
+    },
+    {
+        "id": "8195b16f.8508",
+        "type": "mqtt out",
+        "z": "fbebb658.89881",
+        "name": "To MQTT",
+        "topic": "",
+        "qos": "",
+        "retain": "",
+        "broker": "3e99afd.134cb5",
+        "x": 682.25,
+        "y": 383.75,
+        "wires": []
+    },
+    {
+        "id": "eb90d682.4a7ee8",
+        "type": "mysdecenc",
+        "z": "fbebb658.89881",
+        "name": "",
+        "x": 328.5,
+        "y": 322.5,
+        "wires": [
+            [
+                "b02b82c5.94d41"
+            ]
+        ]
+    },
+    {
+        "id": "b02b82c5.94d41",
+        "type": "function",
+        "z": "fbebb658.89881",
+        "name": "Formats MQTT topic",
+        "func": "msg.topic = \"RPi-sub\" + \"/\" + msg.nodeId + \"/\" + msg.childSensorId + \"/\" + msg.messageType + \"/\" + msg.ack + \"/\" + msg.subType;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 481.75,
+        "y": 380,
+        "wires": [
+            [
+                "8195b16f.8508"
+            ]
+        ]
+    },
+    {
+        "id": "fef89dd1.2f6f38",
+        "type": "debug",
+        "z": "fbebb658.89881",
+        "name": "",
+        "active": true,
+        "console": "false",
+        "complete": "true",
+        "x": 686.0000610351562,
+        "y": 580.75,
+        "wires": []
+    },
+    {
+        "id": "eb5951c8.3c3a6",
+        "type": "tcp out",
+        "z": "fbebb658.89881",
+        "host": "",
+        "port": "",
+        "beserver": "reply",
+        "base64": false,
+        "end": false,
+        "name": "",
+        "x": 693,
+        "y": 653,
+        "wires": []
+    },
+    {
+        "id": "e451fb99.722c6",
+        "type": "tcp in",
+        "z": "fbebb658.89881",
+        "name": "",
+        "server": "server",
+        "host": "",
+        "port": "5003",
+        "datamode": "stream",
+        "datatype": "utf8",
+        "newline": "\\n",
+        "topic": "",
+        "base64": false,
+        "x": 71,
+        "y": 200,
+        "wires": [
+            [
+                "45dedea3.533698"
+            ]
+        ]
+    },
+    {
+        "id": "fed9e427.985c4",
+        "type": "debug",
+        "z": "fbebb658.89881",
+        "name": "",
+        "active": false,
+        "console": "false",
+        "complete": "true",
+        "x": 426.99993896484375,
+        "y": 224.5,
+        "wires": []
+    },
+    {
+        "id": "45dedea3.533698",
+        "type": "function",
+        "z": "fbebb658.89881",
+        "name": "TCP session tracker",
+        "func": "var tcpsess = flow.get('tcpSession') || msg._session;\nif (tcpsess === undefined) \n    node.status({fill:\"red\"});\nelse {\n    node.status({fill:\"green\"});\n    flow.set('tcpSession', tcpsess);\n}\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 189.25,
+        "y": 263.75,
+        "wires": [
+            [
+                "eb90d682.4a7ee8",
+                "fed9e427.985c4"
+            ]
+        ]
+    },
+    {
+        "id": "9ac9b5c1.a21c6",
+        "type": "function",
+        "z": "fbebb658.89881",
+        "name": "TCP session tracker",
+        "func": "msg._session = flow.get('tcpSession');\nif (msg._session === undefined)\n    node.status({fill:\"red\", text:\"no TCP session\"});\nelse {\n    node.status({fill:\"green\", text:\"reply TCP\"});\n    return msg;\n}",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 494,
+        "y": 603.75,
+        "wires": [
+            [
+                "eb5951c8.3c3a6",
+                "fef89dd1.2f6f38"
+            ]
+        ]
+    },
+    {
+        "id": "b922ec81.655ec",
+        "type": "comment",
+        "z": "fbebb658.89881",
+        "name": "from TCP to MQTT",
+        "info": "TCP session tracker is *ugly hack*.\n\nIts required to make sure the data submitted back to TCP has the \nsession number. If it doesnt, TCP-out doesn't know where to send the data\n\nThis means that you MUST send something from TCP initially so the receiving\nend knows where to put data.",
+        "x": 402,
+        "y": 154,
+        "wires": []
+    },
+    {
+        "id": "3e0cac6e.e720ec",
+        "type": "comment",
+        "z": "fbebb658.89881",
+        "name": "from MQTT to TCP",
+        "info": "",
+        "x": 498.75,
+        "y": 489.25,
+        "wires": []
+    },
+    {
+        "id": "c4ad0c55.b13ad",
+        "type": "debug",
+        "z": "fbebb658.89881",
+        "name": "",
+        "active": false,
+        "console": "false",
+        "complete": "payload",
+        "x": 268.75,
+        "y": 491.25,
+        "wires": []
+    },
+    {
+        "id": "cdb75c0c.82b478",
+        "type": "status",
+        "z": "fbebb658.89881",
+        "name": "Connections",
+        "scope": [
+            "e451fb99.722c6"
+        ],
+        "x": 107.5,
+        "y": 50,
+        "wires": [
+            [
+                "9e7cfd5d.59f92"
+            ]
+        ]
+    },
+    {
+        "id": "752e728c.42590c",
+        "type": "debug",
+        "z": "fbebb658.89881",
+        "name": "",
+        "active": false,
+        "console": "false",
+        "complete": "status",
+        "x": 525,
+        "y": 103.75,
+        "wires": []
+    },
+    {
+        "id": "9e7cfd5d.59f92",
+        "type": "function",
+        "z": "fbebb658.89881",
+        "name": "Reset TCP session",
+        "func": "if (msg.status.text == '0 connections')\n    flow.set('tcpSession', undefined);\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 325,
+        "y": 57.5,
+        "wires": [
+            [
+                "752e728c.42590c",
+                "e3d66cfa.5a3048"
+            ]
+        ]
+    },
+    {
+        "id": "e3d66cfa.5a3048",
+        "type": "debug",
+        "z": "fbebb658.89881",
+        "name": "",
+        "active": false,
+        "console": "false",
+        "complete": "_session",
+        "x": 530,
+        "y": 50,
+        "wires": []
+    },
+    {
+        "id": "b71d0a80.e084a",
+        "type": "inject",
+        "z": "fbebb658.89881",
+        "name": "Test message",
+        "topic": "",
+        "payload": "12;1;1;0;18;811.8512\\n",
+        "payloadType": "str",
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "x": 268.75,
+        "y": 670,
+        "wires": [
+            [
+                "9ac9b5c1.a21c6"
+            ]
+        ]
+    },
+    {
+        "id": "d388f4ae.23147",
+        "type": "mqtt-broker",
+        "z": "fbebb658.89881",
+        "broker": "openhab",
+        "port": "1883",
+        "clientid": "",
+        "usetls": false,
+        "verifyservercert": true,
+        "compatmode": true,
+        "keepalive": "15",
+        "cleansession": true,
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": null,
+        "willPayload": "",
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": null,
+        "birthPayload": ""
+    },
+    {
+        "id": "3e99afd.134cb5",
+        "type": "mqtt-broker",
+        "z": "fbebb658.89881",
+        "broker": "openhab",
+        "port": "1883",
+        "clientid": "",
+        "usetls": false,
+        "verifyservercert": true,
+        "compatmode": true,
+        "keepalive": "15",
+        "cleansession": true,
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": null,
+        "willPayload": "",
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": null,
+        "birthPayload": ""
+    }
+]
