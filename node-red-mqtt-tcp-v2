@@ -1,0 +1,134 @@
+[
+    {
+        "id": "73a58b8d.0935ec",
+        "type": "tab",
+        "label": "MQTT - Serial GW"
+    },
+    {
+        "id": "640344a1.e8ffe4",
+        "type": "tcp in",
+        "z": "73a58b8d.0935ec",
+        "name": "",
+        "server": "server",
+        "host": "",
+        "port": "5004",
+        "datamode": "stream",
+        "datatype": "utf8",
+        "newline": "\\n",
+        "topic": "tcp",
+        "base64": false,
+        "x": 95,
+        "y": 64,
+        "wires": [
+            [
+                "f33ec623.981f9"
+            ]
+        ]
+    },
+    {
+        "id": "f33ec623.981f9",
+        "type": "function",
+        "z": "73a58b8d.0935ec",
+        "name": "MQTT/Serial",
+        "func": "// First output is MQTT, second is TCP\n// If message comes from TCP, send it to MQTT, when comes from MQTT, route it to TCP\nif (msg.topic == \"tcp\") {\n    // Message is in Serial format (nodeId;childId;type;ack;subType)\n    var m = msg.payload.split(';');\n    if (m.length == 6) {\n        msg.topic = \"RPi-sub\" + \"/\" + m[0] + \"/\" + m[1] + \"/\" + m[2] + \"/\" + m[3] + \"/\" + m[4];\n        msg.payload = m[5];\n        return [msg, null];\n    }\n} else if (msg.topic.substring(0, 7) == \"RPi-pub\") {\n    // Message is in MQTT format - convert it to Serial\n    var m = msg.topic.split('/');\n    msg.payload = m[1] + ';' + m[2] + ';' + m[3] + ';' + m[4] + ';' + m[5] + ';' + msg.payload + '\\n';\n    return [null, msg];\n}\n\nreturn [null, null];",
+        "outputs": "2",
+        "noerr": 0,
+        "x": 392,
+        "y": 102,
+        "wires": [
+            [
+                "75d34bbc.1dbc74",
+                "8f17c5f9.bcd6d8"
+            ],
+            [
+                "b8c75ca7.315c08",
+                "1014c68e.5121e1"
+            ]
+        ]
+    },
+    {
+        "id": "75d34bbc.1dbc74",
+        "type": "mqtt out",
+        "z": "73a58b8d.0935ec",
+        "name": "RPi-sub mqtt",
+        "topic": "",
+        "qos": "2",
+        "retain": "false",
+        "broker": "52fc9c9e.ac5294",
+        "x": 715,
+        "y": 69,
+        "wires": []
+    },
+    {
+        "id": "b8c75ca7.315c08",
+        "type": "tcp out",
+        "z": "73a58b8d.0935ec",
+        "host": "",
+        "port": "",
+        "beserver": "reply",
+        "base64": false,
+        "end": false,
+        "name": "tcp reply",
+        "x": 705,
+        "y": 132,
+        "wires": []
+    },
+    {
+        "id": "9a9c0054.9c8fe",
+        "type": "mqtt in",
+        "z": "73a58b8d.0935ec",
+        "name": "",
+        "topic": "RPi-pub/#",
+        "qos": "2",
+        "broker": "52fc9c9e.ac5294",
+        "x": 96,
+        "y": 127,
+        "wires": [
+            [
+                "f33ec623.981f9"
+            ]
+        ]
+    },
+    {
+        "id": "1014c68e.5121e1",
+        "type": "debug",
+        "z": "73a58b8d.0935ec",
+        "name": "",
+        "active": false,
+        "console": "false",
+        "complete": "payload",
+        "x": 603,
+        "y": 179,
+        "wires": []
+    },
+    {
+        "id": "8f17c5f9.bcd6d8",
+        "type": "debug",
+        "z": "73a58b8d.0935ec",
+        "name": "",
+        "active": false,
+        "console": "false",
+        "complete": "topic",
+        "x": 593,
+        "y": 28,
+        "wires": []
+    },
+    {
+        "id": "52fc9c9e.ac5294",
+        "type": "mqtt-broker",
+        "z": "",
+        "broker": "openwrt",
+        "port": "1883",
+        "clientid": "NodeRED",
+        "usetls": false,
+        "compatmode": true,
+        "keepalive": "60",
+        "cleansession": true,
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": "",
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": ""
+    }
+]
